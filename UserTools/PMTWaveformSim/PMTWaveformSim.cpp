@@ -206,8 +206,12 @@ bool PMTWaveformSim::Execute()
     // The noise std dev appears to be normally distributed around 1 with sigma 0.25
     // TODO: set accurate baseline and noise profiles for all PMTs individually (noise should be fine, baselines will vary)
     double noiseSigma = fRandom.Gaus(1, 0.25);
-    int basline = fRandom.Uniform(300, 350);
+    // int basline = fRandom.Uniform(300, 350);
     
+    if (!GetBaseline(PMTID)) return false;
+    int basline = fBaseline;
+    // std::cout << PMTID << "\t" << basline << std::endl;
+
     // convert the sample map into a vector of Waveforms and put them into the container
     std::vector<Waveform<uint16_t>> rawWaveforms;
     std::vector<CalibratedADCWaveform<double>> calWaveforms;
@@ -266,7 +270,8 @@ bool PMTWaveformSim::LoadPMTParameters()
   // r1 and r2 are the reflection amplitudes (relative to the main peak amplitude)
   // the uncertainties (u*) are the sq(diagonal elements) of the fitted covariance matrix
   double p0, p1, p2, T1, T2, R1, R2,
-         up0, up1, up2, uT1, uT2, uR1, uR2;
+         up0, up1, up2, uT1, uT2, uR1, uR2, 
+	 baseline_input;
                     
   std::string comma;
   std::string line;
@@ -288,9 +293,12 @@ bool PMTWaveformSim::LoadPMTParameters()
     // Turn the line into a stringstream to extract the values
     std::stringstream ss(line);
     ss >> pmtid >> comma >> p0 >> comma >> p1 >> comma >> p2 >> comma >> T1 >> comma >> T2 >> comma >> R1 >> comma >> R2 >> comma 
-       >> up0 >> comma >> up1 >> comma >> up2 >> comma >> uT1 >> comma >> uT2 >> comma >> uR1 >> comma >> uR2;
+       >> up0 >> comma >> up1 >> comma >> up2 >> comma >> uT1 >> comma >> uT2 >> comma >> uR1 >> comma >> uR2 >> comma 
+       >> baseline_input;
 
     fPMTParamMap[pmtid] = {p0, p1, p2, T1, T2, R1, R2, up0, up1, up2, uT1, uT2, uR1, uR2};
+    int baseline_adc = static_cast<int>(std::round(baseline_input));
+    fPMTBaselineMap[pmtid] =  baseline_adc;
 
     logmessage = "PMTWaveformSim: Loaded parameters for PMTID " + std::to_string(pmtid) + ": ";
     logmessage += "p0 = " + std::to_string(p0);
@@ -307,6 +315,7 @@ bool PMTWaveformSim::LoadPMTParameters()
     logmessage += " uncertainty_T2 = " + std::to_string(T2);
     logmessage += " uncertainty_R1 = " + std::to_string(R1);
     logmessage += " uncertainty_R2 = " + std::to_string(R2);
+    logmessage += " baseline = " + std::to_string(baseline_input);
     Log(logmessage, v_message, verbosity);
   }
 
@@ -561,8 +570,19 @@ double PMTWaveformSim::TimeSmearing(int pmtid)
   double time_smearing = fRandom.Gaus(0, timing_sigma);
   return time_smearing;
 }
-				     
 
+bool PMTWaveformSim::GetBaseline(int pmtid)
+{
+  // Fetching baseline using PMT ID from the fPMTBaselineMap
+  auto it = fPMTBaselineMap.find(pmtid);
+  if (it != fPMTBaselineMap.end()) {
+	  fBaseline = it->second;
+  } else {
+	  logmessage = "PMTWaveformSim: Baseline not found for PMT " + std::to_string(pmtid);
+	  Log(logmessage, v_error, verbosity);
+	  return false;
+  }
 
-
+  return true;
+}
 

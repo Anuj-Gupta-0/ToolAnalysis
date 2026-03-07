@@ -50,7 +50,8 @@ class PMTWaveformSim: public Tool {
 
   void FillDebugGraphs(const std::map<unsigned long, std::vector<Waveform<uint16_t>> > &RawADCDataMC);   ///< debugging
   double TimeSmearing(int pmtid);   ///< prior to sampling the fits, we can add realistic time smearing (instead of relying on WCSim's time smearing) to the MCHit (true) time
-    
+  bool GetBaseline(int pmtid);
+
  private:
 
   // To load from the ANNIEEvent
@@ -72,8 +73,10 @@ class PMTWaveformSim: public Tool {
   TRandom3 fRandom;
 
   std::map<int, PMTFitParams> fPMTParamMap;
+  std::map<int, int> fPMTBaselineMap;
   double fP0, fP1, fP2;                        // main peak parameters
   double fT1, fT2, fR1, fR2;                   // reflection amplitudes and time spacings
+  int fBaseline;
 
                                                // timing uncertainty map
   std::map<unsigned long, double>* ChannelKeyToTimingSigmaMap;
