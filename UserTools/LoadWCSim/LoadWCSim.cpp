@@ -117,6 +117,13 @@ bool LoadWCSim::Initialise(std::string configfile, DataModel &data)
     Log(logmessage, v_warning, verbosity);
   }
 
+  fRandom.SetSeed(0);
+  get_ok = m_variables.Get("ExtendedEfficiency",ExtendedEfficiency);
+  if (not get_ok){
+          Log("LoadWCSim Tool: No ExtendedEfficiency specified. Assuming ExtendedEfficiency = 1.0",v_warning,verbosity);
+          ExtendedEfficiency = 1.0;
+  }
+
   // TODO: should not use relative path.
   // There should be an env var that points to the top directory
   if (!m_variables.Get("ChankeyToPMTIDMap", path_chankeymap)) {
@@ -135,7 +142,7 @@ bool LoadWCSim::Initialise(std::string configfile, DataModel &data)
       channelkey_to_pmtid.emplace(chankey,pmtid);
       pmtid_to_channelkey.emplace(pmtid,chankey);
     }
-		
+
     file_pmtid.close();
     m_data->CStore.Set("pmt_tubeid_to_channelkey_data", pmtid_to_channelkey);
     m_data->CStore.Set("channelkey_to_pmtid_data", channelkey_to_pmtid);
@@ -658,8 +665,12 @@ bool LoadWCSim::Execute()
   DataStreams.emplace(std::make_pair("LAPPD", true));
   m_data->Stores.at("ANNIEEvent")->Set("DataStreams", DataStreams);
 
-  // We have an extended readout for all MC events, set to 1
-  m_data->Stores.at("ANNIEEvent")->Set("TriggerExtended", 1);
+  int TriggerExtended = 0;        //1: We have an extended readout for all MC events
+
+  if (GetExtendedReadout(ExtendedEfficiency)) {
+	  TriggerExtended = 1;
+  }
+  m_data->Stores.at("ANNIEEvent")->Set("TriggerExtended",TriggerExtended);
 
   logmessage = "LoadWCSim::Execute: Done loading event";
   Log(logmessage, v_message, verbosity);
@@ -1580,3 +1591,11 @@ double LoadWCSim::AdjustTime(double time)
   if (splitSubtriggers) return time - EventTimeNs;
   else return time;   
 }
+
+bool LoadWCSim::GetExtendedReadout(double extended_eff){
+	double r = fRandom.Uniform();
+	
+	if (r <= extended_eff) return true;
+	else return false;
+}
+

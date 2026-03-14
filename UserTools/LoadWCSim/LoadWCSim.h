@@ -20,6 +20,7 @@
 #include "BeamStatus.h"
 
 #include "TObjectTable.h"
+#include "TRandom3.h"
 
 namespace{
 	//PMTs
@@ -58,6 +59,7 @@ class LoadWCSim: public Tool {
 	bool LoadHits(WCSimRootTrigger* thisTrig, WCSimRootTrigger* firstTrig, std::string system);
 	
 	double AdjustTime(double time);
+	bool GetExtendedReadout(double extended_eff);
 	
 
 	private:
@@ -76,6 +78,9 @@ class LoadWCSim: public Tool {
 	int RunType;			// Which run type was simulated?
 	std::string PMTMask;		// PMT mask for dead PMTs
 	bool splitSubtriggers;		// should subtriggers be split into different Execute steps?
+	double ExtendedEfficiency;	// Efficiency (as seen in data) for extended readout being fired
+
+	TRandom3 fRandom;
 
 	// WCSim variables
 	//////////////////
